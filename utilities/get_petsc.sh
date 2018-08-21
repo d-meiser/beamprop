@@ -1,6 +1,6 @@
 #!/bin/sh
 PETSC_ARCH=${PETSC_ARCH:-cplx}
-PETSC_DIR=`pwd`/petsc
+PETSC_DIR=`pwd`/third_party/petsc
 
 WITH_X=${WITH_X:-0}
 WITH_DEBUGGING=${WITH_DEBUGGING:-0}
