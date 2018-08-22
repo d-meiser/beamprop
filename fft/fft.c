@@ -80,6 +80,23 @@ void FieldCreate(struct Field *field, int m, int n, double limits[static 4])
 		FFTW_BACKWARD, FFTW_ESTIMATE);
 }
 
+struct Field FieldCopy(struct Field *field)
+{
+	struct Field copy;
+	FieldCreate(&copy, field->m, field->n, field->limits);
+
+	assert(copy.m == field->m);
+	assert(copy.n == field->n);
+	assert(copy.padded_n == field->padded_n);
+
+	memcpy(copy.amplitude, field->amplitude,
+		field->m * field->padded_n * sizeof(*field->amplitude));
+	memcpy(copy.fourier_amplitude, field->fourier_amplitude,
+		field->m * field->padded_n * sizeof(*field->fourier_amplitude));
+
+	return copy;
+}
+
 typedef Amplitude(*AnalyticalField)(double x, double y, void *ctx);
 void FieldFill(struct Field *field, AnalyticalField f, void *ctx)
 {
@@ -108,7 +125,18 @@ void FieldDestroy(struct Field *field)
 	fftw_destroy_plan(field->plan_backward);
 }
 
-static void FieldFillConstant(struct Field *field, Amplitude a)
+void FieldTransform(struct Field *field, int sign)
+{
+	if (sign == FFTW_FORWARD) {
+		fftw_execute(field->plan_forward);
+	} else if (sign == FFTW_BACKWARD) {
+		fftw_execute(field->plan_backward);
+	} else {
+		assert(0);
+	}
+}
+
+void FieldFillConstant(struct Field *field, Amplitude a)
 {
 	for (int i = 0; i < field->m; ++i) {
 		Amplitude *row = __builtin_assume_aligned(
@@ -119,25 +147,103 @@ static void FieldFillConstant(struct Field *field, Amplitude a)
 	}
 }
 
+struct Field build_some_field()
+{
+	struct Field field;
+	int m = 128;
+	int n = m;
+	double xmax = 1.0;
+	double ymax = xmax;
+	double limits[4] = {-xmax, xmax, -ymax, ymax};
+	FieldCreate(&field, m, n, limits);
+	return field;
+}
+
+static double my_drand(double min, double max)
+{
+	return min + (max - min) * drand48();
+}
+
+static Amplitude noise(double x, double y, void *ctx)
+{
+	(void)x;
+	(void)y;
+	(void)ctx;
+	return my_drand(-0.5, 0.5) + I * my_drand(-0.5, 0.5);
+}
+
+static void test_delta_function_transforms_to_constant()
+{
+	struct Field field = build_some_field();
+	FieldFillConstant(&field, 0.0 + I * 0.0);
+	field.amplitude[0] = 1.0;
+	FieldTransform(&field, FFTW_FORWARD);
+
+	static const double my_eps = 1.0e-9;
+	assert(cabs(field.fourier_amplitude[0] -
+		field.fourier_amplitude[1]) < my_eps);
+	assert(cabs(field.fourier_amplitude[0] -
+		field.fourier_amplitude[1 * field.padded_n]) < my_eps);
+	assert(cabs(field.fourier_amplitude[3 * field.padded_n + 5] -
+		field.fourier_amplitude[8 * field.padded_n + 10]) < my_eps);
+
+	FieldDestroy(&field);
+}
+
+static void test_constant_transforms_to_delta_function()
+{
+	struct Field field = build_some_field();
+	FieldFillConstant(&field, 3.0 + I * 2.0);
+	FieldTransform(&field, FFTW_FORWARD);
+
+	static const double my_eps = 1.0e-9;
+	assert(cabs(field.fourier_amplitude[0]) > my_eps);
+	assert(cabs(field.fourier_amplitude[1]) < my_eps);
+	assert(cabs(field.fourier_amplitude[1 * field.padded_n]) < my_eps);
+	assert(cabs(field.fourier_amplitude[5 * field.padded_n + 20]) < my_eps);
+
+	FieldDestroy(&field);
+}
+
+static void test_inverse_transform()
+{
+	struct Field field = build_some_field();
+	FieldFill(&field, noise, 0);
+	struct Field field_copy = FieldCopy(&field);
+
+	FieldTransform(&field, FFTW_FORWARD);
+	FieldTransform(&field, FFTW_BACKWARD);
+
+	static const double my_eps = 1.0e-9;
+	assert(cabs(field_copy.amplitude[0] -
+		field.amplitude[0] / (field.m * field.n)) < my_eps);
+	assert(cabs(field_copy.amplitude[3] -
+		field.amplitude[3] / (field.m * field.n)) < my_eps);
+	assert(cabs(field_copy.amplitude[200] -
+		field.amplitude[200] / (field.m * field.n)) < my_eps);
+
+	FieldDestroy(&field_copy);
+	FieldDestroy(&field);
+}
 
 int main(int argn, char **argv)
 {
 	(void)argn;
 	(void)argv;
 
-	struct Field in;
-	int m = 128;
-	int n = m;
-	double xmax = 1.0;
-	double ymax = xmax;
-	double limits[4] = {-xmax, xmax, -ymax, ymax};
-	FieldCreate(&in, m, n, limits);
+	srand(100);
+
+	test_delta_function_transforms_to_constant();
+	test_constant_transforms_to_delta_function();
+	test_inverse_transform();
+
+	struct Field field = build_some_field();
 	Amplitude a = 1.0 + I * 0.1;
 	asm("# Start fill with constant field");
-	FieldFillConstant(&in, a);
+	FieldFillConstant(&field, a);
 	asm("# End fill with constant field");
 
-	FieldDestroy(&in);
+	FieldDestroy(&field);
 	return 0;
 }
 
