@@ -12,6 +12,8 @@ addons:
     - lcov
 cache:
     apt: true
+    directories:
+      - third_party
 before_install:
   - gem install coveralls-lcov
   - sh utilities/get_fftw.sh
