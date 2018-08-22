@@ -1,6 +1,7 @@
 #include <complex.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 
 typedef double complex Amplitude;
@@ -27,6 +28,7 @@ void FieldCreate(struct Field *field, int m, int n, double limits[static 4])
 	static const int padding = MIN_ALIGNMENT / sizeof(Amplitude);
 	field->padded_n = (n + padding - 1) / padding;
 	field->padded_n *= padding;
+	assert(field->padded_n >= n);
 	field->amplitude = aligned_alloc(MIN_ALIGNMENT,
 		m * field->padded_n * sizeof(*field->amplitude));
 	field->m = m;
@@ -44,10 +46,11 @@ void FieldFill(struct Field *field, AnalyticalField f, void *ctx)
 	double dy = (field->limits[3] - field->limits[2]) / (field->n - 1);
 	for (int i = 0; i < field->m; ++i) {
 		double x =  xmin + i * dx;
+		Amplitude *row = __builtin_assume_aligned(
+			field->amplitude + i * field->padded_n, MIN_ALIGNMENT);
 		for (int j = 0; j < field->n; ++j) {
 			double y =  ymin + j * dy;
-			field->amplitude[i * field->padded_n + j] =
-				f(x, y, ctx);
+			row[j] = f(x, y, ctx);
 		}
 	}
 	asm("# End of FieldFill\n");
@@ -60,7 +63,7 @@ void FieldDestroy(struct Field *field)
 
 static void FieldFillConstant(struct Field *field, Amplitude a)
 {
-	for (int i = 0; i < field->m * field->n; ++i) {
+	for (int i = 0; i < field->m; ++i) {
 		Amplitude *row = __builtin_assume_aligned(
 			field->amplitude + i * field->padded_n, MIN_ALIGNMENT);
 		for (int j = 0; j < field->n; ++j) {
