@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <fftw3.h>
 
 
 typedef double complex Amplitude;
@@ -11,6 +12,8 @@ typedef double complex Amplitude;
 struct Field {
 	/** 2D array of field amplitudes */
 	Amplitude *amplitude;
+	/** 2D array of fourier transformed field amplitudes */
+	Amplitude *fourier_amplitude;
 	/** size along x */
 	int m;
 	/** size along y */
@@ -19,21 +22,62 @@ struct Field {
 	double limits[4];
 	/** padded length of a row to achieve alignment of each row */
 	int padded_n;
+	/** FFT plan for this field */
+	fftw_plan plan_forward;
+	fftw_plan plan_backward;
 };
 
 #define MIN_ALIGNMENT 128
 
+static int compute_padded_n(int n)
+{
+	static const int alignment = MIN_ALIGNMENT / sizeof(Amplitude);
+	int padded_n = (n + alignment - 1) / alignment;
+	padded_n *= alignment;
+	assert(padded_n >= n);
+	return padded_n;
+}
+
+/** Allocates an aligned 2D array of amplitudes
+ *
+ * n has to be a multiple of (MIN_ALIGNMENT / sizeof(Amplitude)). The allocated
+ * memory has the property that the beginning of each row is aligned on a
+ * MIN_ALIGNMENT boundary.
+ */
+static Amplitude *allocate_2D_array(int m, int n)
+{
+	assert(n % (MIN_ALIGNMENT / sizeof(Amplitude)) == 0);
+	Amplitude *array = aligned_alloc(MIN_ALIGNMENT,
+		m * n * sizeof(Amplitude));
+	return array;
+}
+
 void FieldCreate(struct Field *field, int m, int n, double limits[static 4])
 {
-	static const int padding = MIN_ALIGNMENT / sizeof(Amplitude);
-	field->padded_n = (n + padding - 1) / padding;
-	field->padded_n *= padding;
-	assert(field->padded_n >= n);
-	field->amplitude = aligned_alloc(MIN_ALIGNMENT,
-		m * field->padded_n * sizeof(*field->amplitude));
 	field->m = m;
 	field->n = n;
+	field->padded_n = compute_padded_n(n);
+	field->amplitude = allocate_2D_array(m, field->padded_n);
+	field->fourier_amplitude = allocate_2D_array(m, field->padded_n);
 	memcpy(field->limits, limits, 4 * sizeof(*limits));
+
+	int dims[2] = {field->m, field->n};
+	int inembed[2] = {field->m, field->padded_n};
+	int onembed[2] = {field->m, field->padded_n};
+	int istride = 1;
+	int ostride = 1;
+	int idist = 0;
+	int odist = 0;
+	field->plan_forward = fftw_plan_many_dft(
+		2, dims, 1,
+		field->amplitude, inembed, istride, idist,
+		field->fourier_amplitude, onembed, ostride, odist,
+		FFTW_FORWARD, FFTW_ESTIMATE);
+	field->plan_backward = fftw_plan_many_dft(
+		2, dims, 1,
+		field->fourier_amplitude, onembed, ostride, odist,
+		field->amplitude, inembed, istride, idist,
+		FFTW_BACKWARD, FFTW_ESTIMATE);
 }
 
 typedef Amplitude(*AnalyticalField)(double x, double y, void *ctx);
@@ -59,6 +103,9 @@ void FieldFill(struct Field *field, AnalyticalField f, void *ctx)
 void FieldDestroy(struct Field *field)
 {
 	free(field->amplitude);
+	free(field->fourier_amplitude);
+	fftw_destroy_plan(field->plan_forward);
+	fftw_destroy_plan(field->plan_backward);
 }
 
 static void FieldFillConstant(struct Field *field, Amplitude a)
