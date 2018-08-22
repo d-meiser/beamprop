@@ -1,0 +1,38 @@
+sudo: false
+language: c
+compiler:
+  - gcc
+  - clang
+env:
+  - BUILD_TYPE=Release
+  - BUILD_TYPE=Debug
+addons:
+  apt:
+    packages:
+    - lcov
+cache:
+    apt: true
+before_install:
+  - gem install coveralls-lcov
+  - sh utilities/get_fftw.sh
+script:
+  - mkdir -p build
+  - cd build
+  - |
+    cmake \
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DCMAKE_C_FLAGS_RELEASE='-O3 -DNDEBUG -ftree-vectorize -march=native -ffast-math' \
+    -DCMAKE_C_FLAGS_DEBUG='-O0 -g -pg -ftest-coverage -fprofile-arcs' \
+    ..
+  - make -j2
+  - ./fft/fft
+after_success:
+  - |
+    if [ ${BUILD_TYPE} = "Debug" ]; then
+      lcov -d fft -base-directory .. -c -o coverage.info
+      lcov --remove coverage.info '/usr/*' -o coverage.info
+      lcov --remove coverage.info 'test/*' -o coverage.info
+      cd ..
+      coveralls-lcov build/coverage.info
+    fi
+
