@@ -6,6 +6,7 @@
 
 
 typedef double complex Amplitude;
+#define MY_EPS 1.0e-9
 
 
 /** Scalar field on uniform cartesian grid */
@@ -179,13 +180,12 @@ static void test_delta_function_transforms_to_constant()
 	field.amplitude[0] = 1.0;
 	FieldTransform(&field, FFTW_FORWARD);
 
-	static const double my_eps = 1.0e-9;
 	assert(cabs(field.fourier_amplitude[0] -
-		field.fourier_amplitude[1]) < my_eps);
+		field.fourier_amplitude[1]) < MY_EPS);
 	assert(cabs(field.fourier_amplitude[0] -
-		field.fourier_amplitude[1 * field.padded_n]) < my_eps);
+		field.fourier_amplitude[1 * field.padded_n]) < MY_EPS);
 	assert(cabs(field.fourier_amplitude[3 * field.padded_n + 5] -
-		field.fourier_amplitude[8 * field.padded_n + 10]) < my_eps);
+		field.fourier_amplitude[8 * field.padded_n + 10]) < MY_EPS);
 
 	FieldDestroy(&field);
 }
@@ -196,11 +196,10 @@ static void test_constant_transforms_to_delta_function()
 	FieldFillConstant(&field, 3.0 + I * 2.0);
 	FieldTransform(&field, FFTW_FORWARD);
 
-	static const double my_eps = 1.0e-9;
-	assert(cabs(field.fourier_amplitude[0]) > my_eps);
-	assert(cabs(field.fourier_amplitude[1]) < my_eps);
-	assert(cabs(field.fourier_amplitude[1 * field.padded_n]) < my_eps);
-	assert(cabs(field.fourier_amplitude[5 * field.padded_n + 20]) < my_eps);
+	assert(cabs(field.fourier_amplitude[0]) > MY_EPS);
+	assert(cabs(field.fourier_amplitude[1]) < MY_EPS);
+	assert(cabs(field.fourier_amplitude[1 * field.padded_n]) < MY_EPS);
+	assert(cabs(field.fourier_amplitude[5 * field.padded_n + 20]) < MY_EPS);
 
 	FieldDestroy(&field);
 }
@@ -214,13 +213,12 @@ static void test_inverse_transform()
 	FieldTransform(&field, FFTW_FORWARD);
 	FieldTransform(&field, FFTW_BACKWARD);
 
-	static const double my_eps = 1.0e-9;
 	assert(cabs(field_copy.amplitude[0] -
-		field.amplitude[0] / (field.m * field.n)) < my_eps);
+		field.amplitude[0] / (field.m * field.n)) < MY_EPS);
 	assert(cabs(field_copy.amplitude[3] -
-		field.amplitude[3] / (field.m * field.n)) < my_eps);
+		field.amplitude[3] / (field.m * field.n)) < MY_EPS);
 	assert(cabs(field_copy.amplitude[200] -
-		field.amplitude[200] / (field.m * field.n)) < my_eps);
+		field.amplitude[200] / (field.m * field.n)) < MY_EPS);
 
 	FieldDestroy(&field_copy);
 	FieldDestroy(&field);
