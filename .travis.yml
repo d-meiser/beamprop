@@ -27,7 +27,7 @@ script:
     -DCMAKE_C_FLAGS_DEBUG='-O0 -g -pg -ftest-coverage -fprofile-arcs' \
     ..
   - make -j2
-  - ./fft/fft
+  - ctest --output-on-failure
 after_success:
   - |
     if [ ${BUILD_TYPE} = "Debug" ]; then
