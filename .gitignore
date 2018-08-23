@@ -54,3 +54,7 @@ dkms.conf
 # My ignored files
 third_party
 build*
+
+GPATH
+GRTAGS
+GTAGS
