@@ -269,6 +269,23 @@ void FieldPropagate(struct Field *field, double k_0, double dz)
 	FieldTransform(field, FFTW_BACKWARD);
 }
 
+struct GaussianCtx {
+	double mu_x;
+	double sigma_x;
+	double mu_y;
+	double sigma_y;
+};
+
+static Amplitude FieldGaussian(double x, double y, void *ctx)
+{
+	struct GaussianCtx *gctx = ctx;
+	x -= gctx->mu_x;
+	y -= gctx->mu_y;
+	return 1.0 / (2.0 * M_PI * gctx->sigma_x * gctx->sigma_y) * exp(
+		-0.5 * x * x / (gctx->sigma_x * gctx->sigma_x)
+		-0.5 * y * y / (gctx->sigma_y * gctx->sigma_y));
+}
+
 int main(int argn, char **argv)
 {
 	(void)argn;
@@ -282,10 +299,9 @@ int main(int argn, char **argv)
 	test_ki();
 
 	struct Field field = build_some_field();
-	Amplitude a = 1.0 + I * 0.1;
-	asm("# Start fill with constant field");
-	FieldFillConstant(&field, a);
-	asm("# End fill with constant field");
+
+	struct GaussianCtx gctx = {0.0, 0.2, 0.0, 0.3};
+	FieldFill(&field, FieldGaussian, &gctx);
 
 	FieldDestroy(&field);
 	return 0;
