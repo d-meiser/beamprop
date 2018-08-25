@@ -245,8 +245,7 @@ static void test_ki()
 	assert(fabs(ki(0, 10, 1.0)) < MY_EPS);
 	assert(ki(1, 10, 1.0) > 0.0);
 	assert(ki(9, 10, 1.0) < 0.0);
-	double lx = 3.0;
-	assert(fabs(fabs(ki(16, 32, lx)) - 16 * 2 * M_PI / lx) < MY_EPS);
+	assert(fabs(fabs(ki(16, 32, 3.0)) - 16 * 2 * M_PI / 3.0) < MY_EPS);
 }
 
 void FieldPropagate(struct Field *field, double k_0, double dz)
