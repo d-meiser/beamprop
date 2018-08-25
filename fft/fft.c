@@ -2,6 +2,7 @@
 #include <complex.h>
 #include <fftw3.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -286,6 +287,23 @@ static Amplitude FieldGaussian(double x, double y, void *ctx)
 		-0.5 * y * y / (gctx->sigma_y * gctx->sigma_y));
 }
 
+static void FieldWriteIntensities(struct Field *field, FILE *f)
+{
+	double dx = (field->limits[1] - field->limits[0]) / field->m;
+	double dy = (field->limits[3] - field->limits[2]) / field->n;
+	for (int i = 0; i < field->m; ++i) {
+		double x = field->limits[0] + i * dx;
+		Amplitude *row = __builtin_assume_aligned(
+			field->amplitude + i * field->padded_n, MIN_ALIGNMENT);
+		for (int j = 0; j < field->n; ++j) {
+			double y = field->limits[2] + j * dy;
+			fprintf(f, "%lf %lf %lf %lf  ",
+				x, y, creal(row[j]), cimag(row[j]));
+		}
+		fprintf(f, "\n");
+	}
+}
+
 int main(int argn, char **argv)
 {
 	(void)argn;
@@ -302,6 +320,7 @@ int main(int argn, char **argv)
 
 	struct GaussianCtx gctx = {0.0, 0.2, 0.0, 0.3};
 	FieldFill(&field, FieldGaussian, &gctx);
+	FieldWriteIntensities(&field, stdout);
 
 	FieldDestroy(&field);
 	return 0;
