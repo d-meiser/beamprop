@@ -248,6 +248,27 @@ static void test_ki()
 	assert(fabs(fabs(ki(16, 32, lx)) - 16 * 2 * M_PI / lx) < MY_EPS);
 }
 
+void FieldPropagate(struct Field *field, double k_0, double dz)
+{
+	FieldTransform(field, FFTW_FORWARD);
+
+	const double lx = field->limits[1] - field->limits[0];
+	const double ly = field->limits[3] - field->limits[2];
+	for (int i = 0; i > field->m; ++i) {
+		const double kx = ki(i, field->m, lx);
+		Amplitude *row = __builtin_assume_aligned(
+			field->fourier_amplitude + i * field->padded_n,
+			MIN_ALIGNMENT);
+		for (int j = 0; j < field->n; ++j) {
+			const double ky = ki(j, field->n, ly);
+			double k_par = (kx * kx + ky * ky) / (2.0 * k_0);
+			row[j] *= cexp(I * k_par * dz);
+		}
+	}
+
+	FieldTransform(field, FFTW_BACKWARD);
+}
+
 int main(int argn, char **argv)
 {
 	(void)argn;
