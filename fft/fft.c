@@ -1,8 +1,9 @@
+#include <assert.h>
 #include <complex.h>
+#include <fftw3.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <fftw3.h>
 
 
 typedef double complex Amplitude;
@@ -224,6 +225,29 @@ static void test_inverse_transform()
 	FieldDestroy(&field);
 }
 
+/** Compute i-th frequency for uniform sampling
+
+    @param i Index of wave number. Assumed to be in [0, n)
+    @param n Number of samples
+    @param l Length of sampling interval
+    @return The i-th frequency
+*/
+static double ki(int i, int n, double l)
+{
+	double dk = 2.0 * M_PI / l;
+	if (i > n / 2) i -= n;
+	return i * dk;
+}
+
+static void test_ki()
+{
+	assert(fabs(ki(0, 10, 1.0)) < MY_EPS);
+	assert(ki(1, 10, 1.0) > 0.0);
+	assert(ki(9, 10, 1.0) < 0.0);
+	double lx = 3.0;
+	assert(fabs(fabs(ki(16, 32, lx)) - 16 * 2 * M_PI / lx) < MY_EPS);
+}
+
 int main(int argn, char **argv)
 {
 	(void)argn;
@@ -234,6 +258,7 @@ int main(int argn, char **argv)
 	test_delta_function_transforms_to_constant();
 	test_constant_transforms_to_delta_function();
 	test_inverse_transform();
+	test_ki();
 
 	struct Field field = build_some_field();
 	Amplitude a = 1.0 + I * 0.1;
