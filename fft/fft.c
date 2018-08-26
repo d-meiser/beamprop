@@ -1,5 +1,5 @@
+#include <fft.h>
 #include <assert.h>
-#include <complex.h>
 #include <fftw3.h>
 #include <math.h>
 #include <stdio.h>
@@ -7,28 +7,8 @@
 #include <string.h>
 
 
-typedef double complex Amplitude;
 #define MY_EPS 1.0e-9
 
-
-/** Scalar field on uniform cartesian grid */
-struct Field {
-	/** 2D array of field amplitudes */
-	Amplitude *amplitude;
-	/** 2D array of fourier transformed field amplitudes */
-	Amplitude *fourier_amplitude;
-	/** size along x */
-	int m;
-	/** size along y */
-	int n;
-	/** limits of domain along x and y */
-	double limits[4];
-	/** padded length of a row to achieve alignment of each row */
-	int padded_n;
-	/** FFT plan for this field */
-	fftw_plan plan_forward;
-	fftw_plan plan_backward;
-};
 
 #define MIN_ALIGNMENT 128
 
@@ -100,7 +80,6 @@ struct Field FieldCopy(struct Field *field)
 	return copy;
 }
 
-typedef Amplitude(*AnalyticalField)(double x, double y, void *ctx);
 void FieldFill(struct Field *field, AnalyticalField f, void *ctx)
 {
 	asm("# Start of FieldFill\n");
@@ -269,14 +248,7 @@ void FieldPropagate(struct Field *field, double k_0, double dz)
 	FieldTransform(field, FFTW_BACKWARD);
 }
 
-struct GaussianCtx {
-	double mu_x;
-	double sigma_x;
-	double mu_y;
-	double sigma_y;
-};
-
-static Amplitude FieldGaussian(double x, double y, void *ctx)
+Amplitude FieldGaussian(double x, double y, void *ctx)
 {
 	struct GaussianCtx *gctx = ctx;
 	x -= gctx->mu_x;
@@ -286,7 +258,7 @@ static Amplitude FieldGaussian(double x, double y, void *ctx)
 		-0.5 * y * y / (gctx->sigma_y * gctx->sigma_y));
 }
 
-static void FieldWriteIntensities(struct Field *field, FILE *f)
+void FieldWriteIntensities(struct Field *field, FILE *f)
 {
 	double dx = (field->limits[1] - field->limits[0]) / field->m;
 	double dy = (field->limits[3] - field->limits[2]) / field->n;
@@ -303,7 +275,7 @@ static void FieldWriteIntensities(struct Field *field, FILE *f)
 	}
 }
 
-static void FieldWriteIntensitiesToFile(struct Field *field,
+void FieldWriteIntensitiesToFile(struct Field *field,
 					const char *filename)
 {
 	FILE *f = fopen(filename, "w");
