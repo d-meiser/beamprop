@@ -3,6 +3,9 @@ project(beamprop)
 enable_testing()
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 
 set(BEAMPROP_THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
