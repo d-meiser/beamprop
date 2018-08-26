@@ -17,7 +17,7 @@ int main(int argn, char **argv)
 	srand(100);
 
 	struct Field field;
-	int m = 2048;
+	int m = 1024;
 	int n = m;
 	double xmax = 1.0;
 	double ymax = xmax;
@@ -30,7 +30,7 @@ int main(int argn, char **argv)
 	double lambda = 1.0e-2;
 	double k0 = 2.0 * M_PI / lambda;
 	double f = 5.0;
-	double aperture_radius = 0.8 * xmax;
+	double aperture_radius = 0.7 * xmax;
 
 	FieldSphericalAperture(&field, aperture_radius);
 	FieldThinLens(&field, k0, -f);
@@ -38,17 +38,21 @@ int main(int argn, char **argv)
 	build_file_name("field", 0, ".dat", 1000, file_name);
 	FieldWriteIntensitiesToFile(&field, "field_0.dat");
 
-	FieldPropagate(&field, k0, f);
+	FieldPropagate(&field, k0, 0.1 * f);
 	build_file_name("field", 1, ".dat", 1000, file_name);
 	FieldWriteIntensitiesToFile(&field, file_name);
 
-	FieldPropagate(&field, k0, f);
+	FieldPropagate(&field, k0, 0.9 * f);
 	build_file_name("field", 2, ".dat", 1000, file_name);
 	FieldWriteIntensitiesToFile(&field, file_name);
 
-	FieldThinLens(&field, k0, -f);
 	FieldPropagate(&field, k0, f);
 	build_file_name("field", 3, ".dat", 1000, file_name);
+	FieldWriteIntensitiesToFile(&field, file_name);
+
+	FieldThinLens(&field, k0, -f);
+	FieldPropagate(&field, k0, 3 * f);
+	build_file_name("field", 4, ".dat", 1000, file_name);
 	FieldWriteIntensitiesToFile(&field, file_name);
 
 	FieldDestroy(&field);
