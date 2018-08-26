@@ -25,14 +25,10 @@ def get_field_data(filename):
     return _unpack_field_data(packed_data)
 
 
-initial_state = get_field_data('initial_state.dat')
-
-plt.plot(initial_state.positions[0, :, 64],
-         np.abs(initial_state.amplitudes[:, 64])**2)
-for i in range(10):
+for i in range(11):
     propagated_state = get_field_data('field_' + str(i) + '.dat')
-    plt.plot(propagated_state.positions[0, :, 64],
-            np.abs(propagated_state.amplitudes[:, 64])**2)
+    center_slice = int(propagated_state.positions.shape[1] / 2)
+    plt.plot(propagated_state.positions[0, :, center_slice],
+            np.abs(propagated_state.amplitudes[:, center_slice])**2)
 plt.show()
-
 

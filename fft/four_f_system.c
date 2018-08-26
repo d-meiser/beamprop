@@ -17,29 +17,41 @@ int main(int argn, char **argv)
 	srand(100);
 
 	struct Field field;
-	int m = 128;
+	int m = 1024;
 	int n = m;
-	double xmax = 1.0;
+	double xmax = 10.0;
 	double ymax = xmax;
 	double limits[4] = {-xmax, xmax, -ymax, ymax};
 	FieldCreate(&field, m, n, limits);
 
-	double wx = 5.0e-2;
-	double wy = 8.0e-2;
-	struct GaussianCtx gctx = {0.0, wx, 0.0, wy};
-	FieldFill(&field, FieldGaussian, &gctx);
-	FieldWriteIntensitiesToFile(&field, "initial_state.dat");
+	FieldFillConstant(&field, 12.0);
+	FieldWriteIntensitiesToFile(&field, "field_0.dat");
 
-	double lambda = 1.0e-2;
+	double lambda = 1.0e-1;
 	double k0 = 2.0 * M_PI / lambda;
-	double dz = 1.0e0;
-	int num_steps = 10;
-	for (int i = 0; i < num_steps; ++i) {
+	double f = 4.0;
+	double aperture_radius = 0.5 * xmax;
+
+	FieldSphericalAperture(&field, aperture_radius);
+	FieldThinLens(&field, k0, f);
+	FieldWriteIntensitiesToFile(&field, "field_0.dat");
+
+	double dz = 0.02 * f;
+	for (int i = 0; i < 10; ++i) {
 		FieldPropagate(&field, k0, dz);
-		char fn[512];
-		build_file_name("field", i, ".dat", 512, fn);
-		FieldWriteIntensitiesToFile(&field, fn);
+		char file_name[1000];
+		build_file_name("field", i + 1, ".dat", 1000, file_name);
+		FieldWriteIntensitiesToFile(&field,file_name);
 	}
+
+	/*
+	FieldPropagate(&field, k0, f);
+	FieldWriteIntensitiesToFile(&field, "field_2.dat");
+
+	FieldThinLens(&field, k0, f);
+	FieldPropagate(&field, k0, 2 * f);
+	FieldWriteIntensitiesToFile(&field, "field_3.dat");
+	*/
 
 	FieldDestroy(&field);
 	return 0;
