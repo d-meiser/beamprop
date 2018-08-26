@@ -254,7 +254,7 @@ void FieldPropagate(struct Field *field, double k_0, double dz)
 
 	const double lx = field->limits[1] - field->limits[0];
 	const double ly = field->limits[3] - field->limits[2];
-	for (int i = 0; i > field->m; ++i) {
+	for (int i = 0; i < field->m; ++i) {
 		const double kx = ki(i, field->m, lx);
 		Amplitude *row = __builtin_assume_aligned(
 			field->fourier_amplitude + i * field->padded_n,
