@@ -22,7 +22,8 @@ if [ ! -e $THIRD_PARTY_DIR/lib/libfftw3.a ]; then
 		./configure \
 		--prefix=${THIRD_PARTY_DIR} \
 		--enable-avx \
-		--enable-shared
+		--enable-shared=yes \
+		--enable-static=no
 	make -j2
 	make check
 	make install
