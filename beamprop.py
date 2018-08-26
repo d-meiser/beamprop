@@ -26,12 +26,13 @@ def get_field_data(filename):
 
 
 initial_state = get_field_data('initial_state.dat')
-n = 1
-propagated_state = get_field_data('field_' + str(n) + '.dat')
 
 plt.plot(initial_state.positions[0, :, 64],
          np.abs(initial_state.amplitudes[:, 64])**2)
-plt.plot(propagated_state.positions[0, :, 64],
-         np.abs(propagated_state.amplitudes[:, 64])**2)
+for i in range(10):
+    propagated_state = get_field_data('field_' + str(i) + '.dat')
+    plt.plot(propagated_state.positions[0, :, 64],
+            np.abs(propagated_state.amplitudes[:, 64])**2)
+plt.show()
 
 
