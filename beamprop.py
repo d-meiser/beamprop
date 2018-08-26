@@ -25,7 +25,7 @@ def get_field_data(filename):
     return _unpack_field_data(packed_data)
 
 
-for i in range(11):
+for i in [0, 2, 3]:
     propagated_state = get_field_data('field_' + str(i) + '.dat')
     center_slice = int(propagated_state.positions.shape[1] / 2)
     plt.plot(propagated_state.positions[0, :, center_slice],
