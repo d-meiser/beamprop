@@ -54,5 +54,6 @@ FFT_EXPORT void FieldWriteIntensitiesToFile(struct Field *field, const char *fil
 */
 FFT_EXPORT double ki(int i, int n, double l);
 FFT_EXPORT void FieldSphericalAperture(struct Field *field, double radius);
+FFT_EXPORT void FieldThinLens(struct Field *field, double k0, double f);
 
 #endif

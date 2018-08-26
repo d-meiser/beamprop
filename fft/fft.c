@@ -212,3 +212,21 @@ void FieldSphericalAperture(struct Field *field, double radius)
 		}
 	}
 }
+
+void FieldThinLens(struct Field *field, double k0, double f)
+{
+	double dx = compute_dx(field->limits[0], field->limits[1], field->m);
+	double dy = compute_dx(field->limits[2], field->limits[3], field->n);
+	for (int i = 0; i < field->m; ++i) {
+		double x = i * dx;
+		Amplitude *row = __builtin_assume_aligned(
+			field->amplitude + i * field->padded_n, MIN_ALIGNMENT);
+		for (int j = 0; j < field->n; ++j) {
+			double y = j * dy;
+			double phase = -0.5 * k0 * (x*x + y*y) / f;
+			double c = cos(phase);
+			double s = sin(phase);
+			row[j] *= c + I * s;
+		}
+	}
+}
