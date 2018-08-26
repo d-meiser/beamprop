@@ -348,9 +348,10 @@ int main(int argn, char **argv)
 	FieldFill(&field, FieldGaussian, &gctx);
 	FieldWriteIntensitiesToFile(&field, "initial_state.dat");
 
-	double k0 = 10.0;
-	double dz = 1.0e-1;
-	int n = 100;
+	double lambda = 1.0e-2;
+	double k0 = 2.0 * M_PI / lambda;
+	double dz = 1.0e0;
+	int n = 10;
 	for (int i = 0; i < n; ++i) {
 		FieldPropagate(&field, k0, dz);
 		char fn[512];
