@@ -10,3 +10,5 @@ add_executable(fft_test fft_test.c)
 target_link_libraries(fft_test fft)
 add_test(fft fft_test)
 
+add_executable(four_f_system four_f_system.c)
+target_link_libraries(four_f_system fft)
