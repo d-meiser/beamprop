@@ -53,5 +53,6 @@ FFT_EXPORT void FieldWriteIntensitiesToFile(struct Field *field, const char *fil
     @return The i-th frequency
 */
 FFT_EXPORT double ki(int i, int n, double l);
+FFT_EXPORT void FieldSphericalAperture(struct Field *field, double radius);
 
 #endif

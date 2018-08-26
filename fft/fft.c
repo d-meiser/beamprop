@@ -77,13 +77,18 @@ struct Field FieldCopy(struct Field *field)
 	return copy;
 }
 
+static double compute_dx(double xmin, double xmax, int n)
+{
+	return (xmax - xmin) / (n - 1.0);
+}
+
 void FieldFill(struct Field *field, AnalyticalField f, void *ctx)
 {
 	asm("# Start of FieldFill\n");
 	double xmin = field->limits[0];
-	double dx = (field->limits[1] - field->limits[0]) / (field->m - 1);
+	double dx = compute_dx(field->limits[0], field->limits[1], field->m);
 	double ymin = field->limits[2];
-	double dy = (field->limits[3] - field->limits[2]) / (field->n - 1);
+	double dy = compute_dx(field->limits[2], field->limits[3], field->n);
 	for (int i = 0; i < field->m; ++i) {
 		double x =  xmin + i * dx;
 		Amplitude *row = __builtin_assume_aligned(
@@ -167,8 +172,8 @@ Amplitude FieldGaussian(double x, double y, void *ctx)
 
 void FieldWriteIntensities(struct Field *field, FILE *f)
 {
-	double dx = (field->limits[1] - field->limits[0]) / field->m;
-	double dy = (field->limits[3] - field->limits[2]) / field->n;
+	double dx = compute_dx(field->limits[0], field->limits[1], field->m);
+	double dy = compute_dx(field->limits[2], field->limits[3], field->n);
 	for (int i = 0; i < field->m; ++i) {
 		double x = field->limits[0] + i * dx;
 		Amplitude *row = __builtin_assume_aligned(
@@ -190,3 +195,20 @@ void FieldWriteIntensitiesToFile(struct Field *field,
 	fclose(f);
 }
 
+void FieldSphericalAperture(struct Field *field, double radius)
+{
+	double dx = compute_dx(field->limits[0], field->limits[1], field->m);
+	double dy = compute_dx(field->limits[2], field->limits[3], field->n);
+	double radius_squared = radius * radius;
+	for (int i = 0; i < field->m; ++i) {
+		double x = i * dx;
+		Amplitude *row = __builtin_assume_aligned(
+			field->amplitude + i * field->padded_n, MIN_ALIGNMENT);
+		for (int j = 0; j < field->n; ++j) {
+			double y = j * dy;
+			if (x * x + y * y > radius_squared) {
+				row[j] = 0.0;
+			}
+		}
+	}
+}
