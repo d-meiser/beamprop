@@ -1,10 +1,11 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class Field():
     def __init__(self, positions, amplitudes):
         self.positions = np.copy(positions)
-        self.amplitude = np.copy(amplitudes)
+        self.amplitudes = np.copy(amplitudes)
 
 
 def _unpack_field_data(packed_data):
@@ -22,3 +23,15 @@ def _unpack_field_data(packed_data):
 def get_field_data(filename):
     packed_data = np.fromfile(filename, dtype=np.float64, sep=' ')
     return _unpack_field_data(packed_data)
+
+
+initial_state = get_field_data('initial_state.dat')
+n = 1
+propagated_state = get_field_data('field_' + str(n) + '.dat')
+
+plt.plot(initial_state.positions[0, :, 64],
+         np.abs(initial_state.amplitudes[:, 64])**2)
+plt.plot(propagated_state.positions[0, :, 64],
+         np.abs(propagated_state.amplitudes[:, 64])**2)
+
+
