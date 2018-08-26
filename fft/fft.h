@@ -1,6 +1,7 @@
 #ifndef BEAMPROP_FFT_H
 #define BEAMPROP_FFT_H
 
+#include <fft_export.h>
 #include <complex.h>
 #include <stdio.h>
 #include <fftw3.h>
@@ -26,13 +27,13 @@ struct Field {
 	fftw_plan plan_backward;
 };
 
-void FieldCreate(struct Field *field, int m, int n, double limits[static 4]);
-void FieldDestroy(struct Field *field);
-struct Field FieldCopy(struct Field *field);
+FFT_EXPORT void FieldCreate(struct Field *field, int m, int n, double limits[static 4]);
+FFT_EXPORT void FieldDestroy(struct Field *field);
+FFT_EXPORT struct Field FieldCopy(struct Field *field);
 typedef Amplitude(*AnalyticalField)(double x, double y, void *ctx);
-void FieldFill(struct Field *field, AnalyticalField f, void *ctx);
-void FieldTransform(struct Field *field, int sign);
-void FieldPropagate(struct Field *field, double k_0, double dz);
+FFT_EXPORT void FieldFill(struct Field *field, AnalyticalField f, void *ctx);
+FFT_EXPORT void FieldTransform(struct Field *field, int sign);
+FFT_EXPORT void FieldPropagate(struct Field *field, double k_0, double dz);
 
 struct GaussianCtx {
 	double mu_x;
@@ -40,10 +41,10 @@ struct GaussianCtx {
 	double mu_y;
 	double sigma_y;
 };
-Amplitude FieldGaussian(double x, double y, void *ctx);
-void FieldFillConstant(struct Field *field, Amplitude a);
-void FieldWriteIntensities(struct Field *field, FILE *f);
-void FieldWriteIntensitiesToFile(struct Field *field, const char *filename);
+FFT_EXPORT Amplitude FieldGaussian(double x, double y, void *ctx);
+FFT_EXPORT void FieldFillConstant(struct Field *field, Amplitude a);
+FFT_EXPORT void FieldWriteIntensities(struct Field *field, FILE *f);
+FFT_EXPORT void FieldWriteIntensitiesToFile(struct Field *field, const char *filename);
 /** Compute i-th frequency for uniform sampling
 
     @param i Index of wave number. Assumed to be in [0, n)
@@ -51,6 +52,6 @@ void FieldWriteIntensitiesToFile(struct Field *field, const char *filename);
     @param l Length of sampling interval
     @return The i-th frequency
 */
-double ki(int i, int n, double l);
+FFT_EXPORT double ki(int i, int n, double l);
 
 #endif

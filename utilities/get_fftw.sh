@@ -21,7 +21,8 @@ if [ ! -e $THIRD_PARTY_DIR/lib/libfftw3.a ]; then
 	CFLAGS='-ffast-math -O3' \
 		./configure \
 		--prefix=${THIRD_PARTY_DIR} \
-		--enable-avx
+		--enable-avx \
+		--enable-shared
 	make -j2
 	make check
 	make install

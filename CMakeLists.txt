@@ -12,6 +12,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(FFTW_ROOT ${BEAMPROP_THIRD_PARTY_DIR})
 find_package(FFTW)
 
+cmake_policy(SET CMP0063 NEW)
+include(GenerateExportHeader)
+
 
 add_library(common_settings INTERFACE)
 target_compile_options(common_settings INTERFACE -Wall -Wextra -Werror)
