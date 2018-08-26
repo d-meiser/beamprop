@@ -41,7 +41,16 @@ struct GaussianCtx {
 	double sigma_y;
 };
 Amplitude FieldGaussian(double x, double y, void *ctx);
+void FieldFillConstant(struct Field *field, Amplitude a);
 void FieldWriteIntensities(struct Field *field, FILE *f);
 void FieldWriteIntensitiesToFile(struct Field *field, const char *filename);
+/** Compute i-th frequency for uniform sampling
+
+    @param i Index of wave number. Assumed to be in [0, n)
+    @param n Number of samples
+    @param l Length of sampling interval
+    @return The i-th frequency
+*/
+double ki(int i, int n, double l);
 
 #endif
