@@ -262,7 +262,7 @@ void FieldPropagate(struct Field *field, double k_0, double dz)
 		for (int j = 0; j < field->n; ++j) {
 			const double ky = ki(j, field->n, ly);
 			double k_par = (kx * kx + ky * ky) / (2.0 * k_0);
-			row[j] *= cexp(I * k_par * dz);
+			row[j] *= cexp(I * k_par * dz) / (field->m * field->n);
 		}
 	}
 
@@ -306,9 +306,23 @@ static void FieldWriteIntensities(struct Field *field, FILE *f)
 static void FieldWriteIntensitiesToFile(struct Field *field,
 					const char *filename)
 {
-  FILE *f = fopen(filename, "w");
-  FieldWriteIntensities(field, f);
-  fclospep(f);
+	FILE *f = fopen(filename, "w");
+	FieldWriteIntensities(field, f);
+	fclose(f);
+}
+
+static void build_file_name(const char *base, int i, const char *suffix,
+			    size_t n, char *file_name)
+{
+	snprintf(file_name, n, "%s_%d%s", base, i, suffix);
+}
+
+static int testing(int argn, char **argv)
+{
+	for (int i = 1; i < argn; ++i) {
+		if (0 == strcmp("--testing", argv[i])) return 1;
+	}
+	return 0;
 }
 
 int main(int argn, char **argv)
@@ -318,10 +332,13 @@ int main(int argn, char **argv)
 
 	srand(100);
 
-	test_delta_function_transforms_to_constant();
-	test_constant_transforms_to_delta_function();
-	test_inverse_transform();
-	test_ki();
+	if (testing(argn, argv)) {
+		test_delta_function_transforms_to_constant();
+		test_constant_transforms_to_delta_function();
+		test_inverse_transform();
+		test_ki();
+		return 0;
+	}
 
 	struct Field field = build_some_field();
 
@@ -330,6 +347,16 @@ int main(int argn, char **argv)
 	struct GaussianCtx gctx = {0.0, wx, 0.0, wy};
 	FieldFill(&field, FieldGaussian, &gctx);
 	FieldWriteIntensitiesToFile(&field, "initial_state.dat");
+
+	double k0 = 10.0;
+	double dz = 1.0e-1;
+	int n = 100;
+	for (int i = 0; i < n; ++i) {
+		FieldPropagate(&field, k0, dz);
+		char fn[512];
+		build_file_name("field", i, ".dat", 512, fn);
+		FieldWriteIntensitiesToFile(&field, fn);
+	}
 
 	FieldDestroy(&field);
 	return 0;
