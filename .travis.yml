@@ -23,6 +23,7 @@ script:
   - |
     cmake \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DBUILD_SHARED_LIBS=ON \
     -DCMAKE_C_FLAGS_RELEASE='-O3 -DNDEBUG -ftree-vectorize -march=native -ffast-math' \
     -DCMAKE_C_FLAGS_DEBUG='-O0 -g -pg -ftest-coverage -fprofile-arcs' \
     ..
