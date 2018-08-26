@@ -303,6 +303,14 @@ static void FieldWriteIntensities(struct Field *field, FILE *f)
 	}
 }
 
+static void FieldWriteIntensitiesToFile(struct Field *field,
+					const char *filename)
+{
+  FILE *f = fopen(filename, "w");
+  FieldWriteIntensities(field, f);
+  fclospep(f);
+}
+
 int main(int argn, char **argv)
 {
 	(void)argn;
@@ -317,9 +325,11 @@ int main(int argn, char **argv)
 
 	struct Field field = build_some_field();
 
-	struct GaussianCtx gctx = {0.0, 0.2, 0.0, 0.3};
+	double wx = 5.0e-2;
+	double wy = 8.0e-2;
+	struct GaussianCtx gctx = {0.0, wx, 0.0, wy};
 	FieldFill(&field, FieldGaussian, &gctx);
-	FieldWriteIntensities(&field, stdout);
+	FieldWriteIntensitiesToFile(&field, "initial_state.dat");
 
 	FieldDestroy(&field);
 	return 0;
