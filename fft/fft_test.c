@@ -7,15 +7,15 @@
 #define MY_EPS 1.0e-9
 
 
-static struct Field build_some_field()
+static struct Field2D build_some_field()
 {
-	struct Field field;
+	struct Field2D field;
 	int m = 128;
 	int n = m;
 	double xmax = 1.0;
 	double ymax = xmax;
 	double limits[4] = {-xmax, xmax, -ymax, ymax};
-	FieldCreate(&field, m, n, limits);
+	Field2DCreate(&field, m, n, limits);
 	return field;
 }
 
@@ -34,10 +34,10 @@ static Amplitude noise(double x, double y, void *ctx)
 
 static void test_delta_function_transforms_to_constant()
 {
-	struct Field field = build_some_field();
-	FieldFillConstant(&field, 0.0 + I * 0.0);
+	struct Field2D field = build_some_field();
+	Field2DFillConstant(&field, 0.0 + I * 0.0);
 	field.amplitude[0] = 1.0;
-	FieldTransform(&field, FFTW_FORWARD);
+	Field2DTransform(&field, FFTW_FORWARD);
 
 	assert(cabs(field.fourier_amplitude[0] -
 		field.fourier_amplitude[1]) < MY_EPS);
@@ -46,31 +46,31 @@ static void test_delta_function_transforms_to_constant()
 	assert(cabs(field.fourier_amplitude[3 * field.padded_n + 5] -
 		field.fourier_amplitude[8 * field.padded_n + 10]) < MY_EPS);
 
-	FieldDestroy(&field);
+	Field2DDestroy(&field);
 }
 
 static void test_constant_transforms_to_delta_function()
 {
-	struct Field field = build_some_field();
-	FieldFillConstant(&field, 3.0 + I * 2.0);
-	FieldTransform(&field, FFTW_FORWARD);
+	struct Field2D field = build_some_field();
+	Field2DFillConstant(&field, 3.0 + I * 2.0);
+	Field2DTransform(&field, FFTW_FORWARD);
 
 	assert(cabs(field.fourier_amplitude[0]) > MY_EPS);
 	assert(cabs(field.fourier_amplitude[1]) < MY_EPS);
 	assert(cabs(field.fourier_amplitude[1 * field.padded_n]) < MY_EPS);
 	assert(cabs(field.fourier_amplitude[5 * field.padded_n + 20]) < MY_EPS);
 
-	FieldDestroy(&field);
+	Field2DDestroy(&field);
 }
 
 static void test_inverse_transform()
 {
-	struct Field field = build_some_field();
-	FieldFill(&field, noise, 0);
-	struct Field field_copy = FieldCopy(&field);
+	struct Field2D field = build_some_field();
+	Field2DFill(&field, noise, 0);
+	struct Field2D field_copy = Field2DCopy(&field);
 
-	FieldTransform(&field, FFTW_FORWARD);
-	FieldTransform(&field, FFTW_BACKWARD);
+	Field2DTransform(&field, FFTW_FORWARD);
+	Field2DTransform(&field, FFTW_BACKWARD);
 
 	assert(cabs(field_copy.amplitude[0] -
 		field.amplitude[0] / (field.m * field.n)) < MY_EPS);
@@ -79,8 +79,8 @@ static void test_inverse_transform()
 	assert(cabs(field_copy.amplitude[200] -
 		field.amplitude[200] / (field.m * field.n)) < MY_EPS);
 
-	FieldDestroy(&field_copy);
-	FieldDestroy(&field);
+	Field2DDestroy(&field_copy);
+	Field2DDestroy(&field);
 }
 
 static void test_ki()

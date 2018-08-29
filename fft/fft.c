@@ -32,7 +32,7 @@ static Amplitude *allocate_2D_array(int m, int n)
 	return array;
 }
 
-void FieldCreate(struct Field *field, int m, int n, double limits[static 4])
+void Field2DCreate(struct Field2D *field, int m, int n, double limits[static 4])
 {
 	field->m = m;
 	field->n = n;
@@ -60,10 +60,10 @@ void FieldCreate(struct Field *field, int m, int n, double limits[static 4])
 		FFTW_BACKWARD, FFTW_ESTIMATE);
 }
 
-struct Field FieldCopy(struct Field *field)
+struct Field2D Field2DCopy(struct Field2D *field)
 {
-	struct Field copy;
-	FieldCreate(&copy, field->m, field->n, field->limits);
+	struct Field2D copy;
+	Field2DCreate(&copy, field->m, field->n, field->limits);
 
 	assert(copy.m == field->m);
 	assert(copy.n == field->n);
@@ -82,9 +82,9 @@ static double compute_dx(double xmin, double xmax, int n)
 	return (xmax - xmin) / (n - 1.0);
 }
 
-void FieldFill(struct Field *field, AnalyticalField f, void *ctx)
+void Field2DFill(struct Field2D *field, AnalyticalField2D f, void *ctx)
 {
-	asm("# Start of FieldFill\n");
+	asm("# Start of Field2DFill\n");
 	double xmin = field->limits[0];
 	double dx = compute_dx(field->limits[0], field->limits[1], field->m);
 	double ymin = field->limits[2];
@@ -98,10 +98,10 @@ void FieldFill(struct Field *field, AnalyticalField f, void *ctx)
 			row[j] = f(x, y, ctx);
 		}
 	}
-	asm("# End of FieldFill\n");
+	asm("# End of Field2DFill\n");
 }
 
-void FieldDestroy(struct Field *field)
+void Field2DDestroy(struct Field2D *field)
 {
 	free(field->amplitude);
 	free(field->fourier_amplitude);
@@ -109,7 +109,7 @@ void FieldDestroy(struct Field *field)
 	fftw_destroy_plan(field->plan_backward);
 }
 
-void FieldTransform(struct Field *field, int sign)
+void Field2DTransform(struct Field2D *field, int sign)
 {
 	if (sign == FFTW_FORWARD) {
 		fftw_execute(field->plan_forward);
@@ -120,7 +120,7 @@ void FieldTransform(struct Field *field, int sign)
 	}
 }
 
-void FieldFillConstant(struct Field *field, Amplitude a)
+void Field2DFillConstant(struct Field2D *field, Amplitude a)
 {
 	for (int i = 0; i < field->m; ++i) {
 		Amplitude *row = __builtin_assume_aligned(
@@ -139,9 +139,9 @@ double ki(int i, int n, double l)
 	return i * dk;
 }
 
-void FieldPropagate(struct Field *field, double k_0, double dz)
+void Field2DPropagate(struct Field2D *field, double k_0, double dz)
 {
-	FieldTransform(field, FFTW_FORWARD);
+	Field2DTransform(field, FFTW_FORWARD);
 
 	const double lx = field->limits[1] - field->limits[0];
 	const double ly = field->limits[3] - field->limits[2];
@@ -157,10 +157,10 @@ void FieldPropagate(struct Field *field, double k_0, double dz)
 		}
 	}
 
-	FieldTransform(field, FFTW_BACKWARD);
+	Field2DTransform(field, FFTW_BACKWARD);
 }
 
-Amplitude FieldGaussian(double x, double y, void *ctx)
+Amplitude Field2DGaussian(double x, double y, void *ctx)
 {
 	struct GaussianCtx *gctx = ctx;
 	x -= gctx->mu_x;
@@ -170,7 +170,7 @@ Amplitude FieldGaussian(double x, double y, void *ctx)
 		-0.5 * y * y / (gctx->sigma_y * gctx->sigma_y));
 }
 
-void FieldWriteIntensities(struct Field *field, FILE *f)
+void Field2DWriteIntensities(struct Field2D *field, FILE *f)
 {
 	double dx = compute_dx(field->limits[0], field->limits[1], field->m);
 	double dy = compute_dx(field->limits[2], field->limits[3], field->n);
@@ -187,15 +187,15 @@ void FieldWriteIntensities(struct Field *field, FILE *f)
 	}
 }
 
-void FieldWriteIntensitiesToFile(struct Field *field,
+void Field2DWriteIntensitiesToFile(struct Field2D *field,
 					const char *filename)
 {
 	FILE *f = fopen(filename, "w");
-	FieldWriteIntensities(field, f);
+	Field2DWriteIntensities(field, f);
 	fclose(f);
 }
 
-void FieldSphericalAperture(struct Field *field, double radius)
+void Field2DSphericalAperture(struct Field2D *field, double radius)
 {
 	double dx = compute_dx(field->limits[0], field->limits[1], field->m);
 	double dy = compute_dx(field->limits[2], field->limits[3], field->n);
@@ -213,7 +213,7 @@ void FieldSphericalAperture(struct Field *field, double radius)
 	}
 }
 
-void FieldThinLens(struct Field *field, double k0, double f)
+void Field2DThinLens(struct Field2D *field, double k0, double f)
 {
 	double dx = compute_dx(field->limits[0], field->limits[1], field->m);
 	double dy = compute_dx(field->limits[2], field->limits[3], field->n);
@@ -227,6 +227,32 @@ void FieldThinLens(struct Field *field, double k0, double f)
 			double c = cos(phase);
 			double s = sin(phase);
 			row[j] *= c + I * s;
+		}
+	}
+}
+
+FFT_EXPORT void Field2DAmplitudeGrating(struct Field2D *field, double pitch, double w)
+{
+	double dx = compute_dx(field->limits[0], field->limits[1], field->m);
+	for (int i = 0; i < field->m; ++i) {
+		double x = field->limits[0] + i * dx;
+		x = x - floor(x / pitch) * pitch;
+		assert(x >= 0);
+		assert(x <= pitch);
+		double mask = 0.0;
+		if (x < 0.5 * dx) {
+			mask = 0.5 + x / dx;
+		} else if (x >= 0.5 * dx && x < w - 0.5 * dx) {
+			mask = 1.0;
+		} else if (x >= w - 0.5 * dx && x < w + 0.5 * dx) {
+			mask = 0.5 - (x - w) / dx;
+		} else if (x >= pitch - 0.5 * dx) {
+			mask = 0.5 + (x - pitch) / dx;
+		}
+		Amplitude *row = __builtin_assume_aligned(
+			field->amplitude + i * field->padded_n, MIN_ALIGNMENT);
+		for (int j = 0; j < field->n; ++j) {
+			row[j] *= mask;
 		}
 	}
 }

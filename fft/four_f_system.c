@@ -16,46 +16,46 @@ int main(int argn, char **argv)
 
 	srand(100);
 
-	struct Field field;
-	int m = 1024;
+	struct Field2D field;
+	int m = 2048;
 	int n = m;
 	double xmax = 1.0;
 	double ymax = xmax;
 	double limits[4] = {-xmax, xmax, -ymax, ymax};
-	FieldCreate(&field, m, n, limits);
+	Field2DCreate(&field, m, n, limits);
 
-	FieldFillConstant(&field, 10.0);
-	FieldWriteIntensitiesToFile(&field, "field_0.dat");
+	Field2DFillConstant(&field, 10.0);
 
-	double lambda = 1.0e-2;
+	double lambda = 2.5e-3;
 	double k0 = 2.0 * M_PI / lambda;
 	double f = 5.0;
 	double aperture_radius = 0.7 * xmax;
 
-	FieldSphericalAperture(&field, aperture_radius);
-	FieldThinLens(&field, k0, -f);
+	Field2DSphericalAperture(&field, aperture_radius);
+	Field2DAmplitudeGrating(&field, 0.2, 0.1);
+	Field2DThinLens(&field, k0, -f);
 	char file_name[1000];
 	build_file_name("field", 0, ".dat", 1000, file_name);
-	FieldWriteIntensitiesToFile(&field, "field_0.dat");
+	Field2DWriteIntensitiesToFile(&field, "field_0.dat");
 
-	FieldPropagate(&field, k0, 0.1 * f);
+	Field2DPropagate(&field, k0, 0.1 * f);
 	build_file_name("field", 1, ".dat", 1000, file_name);
-	FieldWriteIntensitiesToFile(&field, file_name);
+	Field2DWriteIntensitiesToFile(&field, file_name);
 
-	FieldPropagate(&field, k0, 0.9 * f);
+	Field2DPropagate(&field, k0, 0.9 * f);
 	build_file_name("field", 2, ".dat", 1000, file_name);
-	FieldWriteIntensitiesToFile(&field, file_name);
+	Field2DWriteIntensitiesToFile(&field, file_name);
 
-	FieldPropagate(&field, k0, f);
+	Field2DPropagate(&field, k0, f);
 	build_file_name("field", 3, ".dat", 1000, file_name);
-	FieldWriteIntensitiesToFile(&field, file_name);
+	Field2DWriteIntensitiesToFile(&field, file_name);
 
-	FieldThinLens(&field, k0, -f);
-	FieldPropagate(&field, k0, 3 * f);
+	Field2DThinLens(&field, k0, -f);
+	Field2DPropagate(&field, k0, 3 * f);
 	build_file_name("field", 4, ".dat", 1000, file_name);
-	FieldWriteIntensitiesToFile(&field, file_name);
+	Field2DWriteIntensitiesToFile(&field, file_name);
 
-	FieldDestroy(&field);
+	Field2DDestroy(&field);
 	return 0;
 }
 
